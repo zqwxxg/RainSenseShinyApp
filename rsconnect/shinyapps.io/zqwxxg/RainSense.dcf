@@ -1,0 +1,12 @@
+name: RainSense
+title: RainSense
+username: zqwxxg
+account: zqwxxg
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14442307
+bundleId: 10065197
+url: https://zqwxxg.shinyapps.io/RainSense/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
