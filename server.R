@@ -278,71 +278,6 @@ server <- function(input, output, session) {
       incProgress(1)
     })
   })
-  
-  # 
-  # # ANOVA
-  # observeEvent(input$run_anova, {
-  #   withProgress(message = "Running ANOVA analysis...", value = 0, {
-  #     
-  #     req(weather_active_data())
-  #     incProgress(0.1)
-  #     
-  #     weather_active <- weather_active_data()
-  #     selected_station <- input$anova_station
-  #     selected_year <- year(input$anova_year)
-  #     
-  #     data_filtered <- weather_active %>%
-  #       filter((selected_station == "All" | Station == selected_station), Year == selected_year)
-  #     
-  #     incProgress(0.3)
-  #     
-  #     if (nrow(data_filtered) == 0) {
-  #       output$anova_plot <- renderPlotly({
-  #         ggplotly(ggplot() +
-  #                    annotate("text", x = 1, y = 1, label = "No data found for this station and year") +
-  #                    xlim(0, 2) + ylim(0, 2) + theme_void())
-  #       })
-  #       output$anova_summary <- renderUI({
-  #         HTML(paste0("<div style='color:black;'>No data available for <b>", selected_station,
-  #                     "</b> in <b>", selected_year, "</b>.</div>"))
-  #       })
-  #       return()
-  #     }
-  #     
-  #     incProgress(0.6)
-  #     
-  #     output$anova_plot <- renderPlotly({
-  #       p <- ggbetweenstats(
-  #         data = data_filtered,
-  #         x = Season,
-  #         y = Daily.Rainfall.Total..mm.,
-  #         type = "p",
-  #         pairwise.comparisons = TRUE,
-  #         pairwise.display = "s",
-  #         output = "plot"
-  #       ) + labs(title = paste("ANOVA Result for", selected_station, "in", selected_year))
-  #       ggplotly(p)
-  #     })
-  #     
-  #     incProgress(0.9)
-  #     
-  #     output$anova_summary <- renderUI({
-  #       means <- data_filtered %>%
-  #         group_by(Season) %>%
-  #         summarise(Mean = mean(Daily.Rainfall.Total..mm., na.rm = TRUE)) %>%
-  #         arrange(desc(Mean))
-  #       top <- means[1, ]
-  #       HTML(paste0(
-  #         "<div style='color:black;'>",
-  #         "In <b>", selected_year, "</b>, at <b>", selected_station, "</b>, the season with the highest average daily rainfall was <b>",
-  #         top$Season, "</b> with <b>", round(top$Mean, 2), " mm</b>.",
-  #         "</div>"
-  #       ))
-  #     })
-  #     
-  #     incProgress(1)
-  #   })
-  # })
 
   # Poisson
   observeEvent(input$run_poisson, {
@@ -526,68 +461,6 @@ server <- function(input, output, session) {
     })
   })
   
-  # observeEvent(input$submit_kriging, {
-  #   req(monthly_data_sf_data(), yearly_data_sf_data(), weather_sf_data(), coop_data())
-  # 
-  #   granularity <- input$`kriging-granularity`
-  #   selected_date <- input$`kriging-selected_date`
-  # 
-  #   req(granularity, selected_date)
-  # 
-  #   # Start progress bar early
-  #   withProgress(message = "Running interpolation...", value = 0.1, {
-  # 
-  #     future({
-  #       monthly_data_sf <- isolate(monthly_data_sf_data())
-  #       yearly_data_sf <- isolate(yearly_data_sf_data())
-  #       weather_sf <- isolate(weather_sf_data())
-  #       coop <- isolate(coop_data())
-  # 
-  #       specific <- switch(granularity,
-  #                          "Monthly" = monthly_data_sf_data() %>% filter(floor_date(MonthYear, "month") == selected_date),
-  #                          "Daily" = weather_sf_data() %>% filter(format(Date, "%Y-%m-%d") == selected_date),
-  #                          "Yearly" = yearly_data_sf_data() %>% filter(Year == year(selected_date))
-  #       )
-  # 
-  #       if (nrow(specific) == 0) return(NULL)
-  # 
-  #       formula <- switch(granularity,
-  #                         "Monthly" = MonthlyRain ~ 1,
-  #                         "Daily" = Daily.Rainfall.Total..mm. ~ 1,
-  #                         "Yearly" = YearlyRain ~ 1
-  #       )
-  # 
-  #       v_auto <- autofitVariogram(formula, specific)
-  #       k <- gstat(formula = formula, model = v_auto$var_model, data = specific)
-  #       resp <- predict(k, coop_data())
-  # 
-  #       resp$x <- st_coordinates(resp)[, 1]
-  #       resp$y <- st_coordinates(resp)[, 2]
-  #       resp$pred <- resp$var1.pred
-  # 
-  #       kpred <- terra::rasterize(resp, grid, field = "pred")
-  # 
-  #       list(raster = kpred, v_auto = v_auto, gran = tolower(granularity), date = selected_date)
-  #     }) %...>% {
-  #       result <- .
-  # 
-  #       if (is.null(result)) {
-  #         showNotification("No data available for selected time.", type = "error")
-  #         return()
-  #       }
-  # 
-  #       rain_map_result(result$raster)
-  #       v_auto_result(result$v_auto)
-  #       rain_selected_gran(result$gran)
-  #       rain_selected_date(result$date)
-  # 
-  #       incProgress(1, detail = "Done")
-  #     } %...!% {
-  #       showNotification(paste("Kriging failed:", .), type = "error")
-  #     }
-  #   })
-  # })
-  
   output$rain_map <- renderPlot({
     req(rain_map_result())
     req(rain_selected_date())
@@ -636,48 +509,6 @@ server <- function(input, output, session) {
       showNotification(paste("Plotting failed:", e$message), type = "error")
     })
   })
-  
-# output$rain_map <- renderPlot({
-#   req(rain_map_result())
-#   req(rain_selected_date())
-#   req(rain_selected_gran())
-# 
-#   # Check class of raster object
-#   raster_data <- rain_map_result()
-# 
-#   if (!inherits(raster_data, "SpatRaster")) {
-#     showNotification("Rainfall raster is not a valid `terra` SpatRaster.", type = "error")
-#     return()
-#   }
-# 
-#   # Build title
-#   title_date <- switch(
-#     rain_selected_gran(),
-#     "monthly" = format(rain_selected_date(), "%Y %b"),
-#     "yearly"  = format(rain_selected_date(), "%Y"),
-#     "daily"   = format(rain_selected_date(), "%d %b %Y")
-#   )
-# 
-#   # Plot safely
-#   tmap_mode("plot")
-# 
-#   tryCatch({
-#     map <- tm_shape(raster_data) +
-#       tm_raster(
-#         col.scale = tm_scale_continuous(values = "brewer.blues"),
-#         col.legend = tm_legend(title = "Total rainfall (mm)")
-#       ) +
-#       tm_title(text = paste("Rainfall Distribution in", title_date)) +
-#       tm_layout(frame = TRUE) +
-#       tm_compass(type = "8star", size = 2) +
-#       tm_scalebar(position = c("left", "bottom")) +
-#       tm_grid(alpha = 0.2)
-# 
-#     print(map)
-#   }, error = function(e) {
-#     showNotification(paste("Plotting failed:", e$message), type = "error")
-#   })
-# })
   
   output$kriging_summary <- renderUI({
     HTML(paste0(
@@ -892,32 +723,6 @@ server <- function(input, output, session) {
       showNotification(paste("??? IDW plot failed:", e$message), type = "error")
     })
   })
-  
-  # output$idw_map <- renderPlot({
-  #   req(idw_map_result())
-  #   req(idw_selected_date())
-  #   req(idw_selected_gran())
-  # 
-  #   title_date <- if (idw_selected_gran() == "monthly") {
-  #     format(idw_selected_date(), "%Y %b")
-  #   } else if (idw_selected_gran() == "yearly") {
-  #     format(idw_selected_date(), "%Y")
-  #   }
-  # 
-  #   tmap_mode("plot")
-  # 
-  #   map <- tm_shape(idw_map_result()) +
-  #     tm_raster(
-  #       col.legend = tm_legend(title = "Total rainfall (mm)")
-  #     ) +
-  #     tm_title(text = paste("Rainfall Distribution in", title_date)) +
-  #     tm_layout(frame = TRUE) +
-  #     tm_compass(type = "8star", size = 2) +
-  #     tm_scalebar(position = c("left", "bottom")) +
-  #     tm_grid(alpha = 0.2)
-  # 
-  #   print(map)
-  # })
 
   output$idw_summary <- renderUI({
     HTML(paste0(
